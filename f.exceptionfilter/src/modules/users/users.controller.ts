@@ -3,16 +3,21 @@ import {
   Controller,
   Get,
   HttpStatus,
+  Next,
   Param,
   Post,
   Req,
   Res,
+  UseFilters,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { ProductsService } from '../products/products.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { CustomForbiddenException } from 'src/shared/exceptionFilters/forbidden.exception';
+import { HttpExceptionFilter } from 'src/shared/exceptionFilters/http-exception.filter';
 
 @Controller('users')
+@UseFilters(HttpExceptionFilter) // use dependency injection (Dont create new instance)
 export class UsersController {
   constructor(
     private usersService: UsersService,
@@ -64,5 +69,10 @@ export class UsersController {
       console.error(error);
       res.status(HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  @Get('getException')
+  async getException(@Req() req, @Res() res, @Next() next) {
+    throw new CustomForbiddenException();
   }
 }

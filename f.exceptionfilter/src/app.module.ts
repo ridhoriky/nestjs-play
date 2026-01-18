@@ -7,9 +7,17 @@ import {
 import { UsersModule } from './modules/users/users.module';
 import { LoggerMiddleware } from './shared/Middlewares/logger.middleware';
 import { SimpleMiddleware } from './shared/Middlewares/simple.middleware';
+import { APP_FILTER } from '@nestjs/core';
+import { HttpExceptionFilter } from './shared/exceptionFilters/http-exception.filter';
 
 @Module({
   imports: [UsersModule],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
