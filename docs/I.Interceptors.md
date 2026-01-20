@@ -294,3 +294,72 @@ export class LoggingInterceptor implements NestInterceptor {
 
 > KEYS  
 > next.handle() yang artinya 'Silahkan NestJs lanjut ke controller'
+
+## Interceptor for cache
+
+example intercetor for cache
+
+```ts
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+} from "@nestjs/common";
+import { map, Observable, of } from "rxjs";
+
+@Injectable()
+export class CacheInterceptor implements NestInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    const isCached = false;
+    if (isCached) {
+      return of([{ data: "test cache " }]).pipe(map((data) => ({ data })));
+    }
+    return next.handle();
+  }
+}
+```
+
+```psql
+Request
+ ↓
+Interceptor
+   ├─ cache hit → langsung response
+   └─ cache miss → controller → service → response
+```
+
+### Best Practice Cache di NestJS
+
+Gunakan CacheModule bawaan dari nest js
+
+```ts
+import { CacheModule } from "@nestjs/cache-manager";
+
+@Module({
+  imports: [CacheModule.register()],
+})
+export class AppModule {}
+```
+
+contoh implementasi real case
+
+```ts
+@Injectable()
+export class HttpCacheInterceptor implements NestInterceptor {
+  constructor(@Inject(CACHE_MANAGER) private cache: Cache) {}
+
+  async intercept(context: ExecutionContext, next: CallHandler) {
+    const req = context.switchToHttp().getRequest();
+    const key = req.originalUrl;
+
+    const cached = await this.cache.get(key);
+    if (cached) return of(cached);
+
+    return next.handle().pipe(
+      tap(async (res) => {
+        await this.cache.set(key, res, 60);
+      })
+    );
+  }
+}
+```
